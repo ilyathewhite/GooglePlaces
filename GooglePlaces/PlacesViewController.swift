@@ -7,14 +7,13 @@
 //
 
 import UIKit
-import RxCocoa
-import RxSwift
 
-class PlacesViewController: UIViewController {
+class PlacesViewController: UIViewController, UITableViewDelegate, UISearchBarDelegate, PlacesDataSourceDelegate {
    var searchController : UISearchController!
    @IBOutlet var tableView: UITableView!
    
-   var placesModel: PlacesModel!
+   private var dataSource = PlacesDataSource()
+   private var timer = Timer()
    
    override func viewDidLoad() {
       super.viewDidLoad()
@@ -22,23 +21,7 @@ class PlacesViewController: UIViewController {
       configureSearchBar()
       configureTableView()
       
-      placesModel = PlacesModel(querySource: searchController.searchBar.rx.text.asObservable())
-      
-      placesModel.placesArray
-         .drive(tableView.rx.items(cellIdentifier: placeCellIdentifier, cellType: PlaceCell.self)) { (row, place, cell) in
-            cell.configure(with: place)
-         }
-         .disposed(by: placesModel.disposeBag)
-      
-      tableView.rx.modelSelected(Place.self)
-         .subscribe(
-            onNext: { [unowned self] place in
-               let vc = PlaceViewController()
-               vc.place = place
-               self.navigationController?.pushViewController(vc, animated: true)
-            }
-         )
-         .disposed(by: placesModel.disposeBag)
+      dataSource.delegate = self
    }
    
    override func viewWillAppear(_ animated: Bool) {
@@ -51,15 +34,42 @@ class PlacesViewController: UIViewController {
       searchController = UISearchController(searchResultsController:  nil)
       searchController.hidesNavigationBarDuringPresentation = false
       searchController.dimsBackgroundDuringPresentation = false
+      searchController.searchBar.delegate = self
       navigationItem.titleView = searchController.searchBar
    }
    
    private func configureTableView() {
+      tableView.dataSource = dataSource
+      dataSource.registerCells(for: tableView)
+
+      tableView.delegate = self
+      
       tableView.rowHeight = UITableViewAutomaticDimension
       tableView.estimatedRowHeight = 100
-      
-      tableView.register(UINib(nibName: placeCellIdentifier, bundle: nil), forCellReuseIdentifier: placeCellIdentifier)
    }
    
-   private let placeCellIdentifier = "PlaceCell"
+   // UISearchBarDelegate
+   
+   func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+      guard !searchText.isEmpty else { return }
+      
+      timer.invalidate()
+      timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] timer in
+         self?.dataSource.search(query: searchText)
+      }
+   }
+   
+   // UITableViewDelegate
+   
+   func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+      let vc = PlaceViewController()
+      vc.place = dataSource.place(at: indexPath)
+      navigationController?.pushViewController(vc, animated: true)
+   }
+   
+   // PlacesDataSourceDelegate
+   
+   func didFinishSearch(dataSource: PlacesDataSource) {
+      tableView.reloadData()
+   }
 }

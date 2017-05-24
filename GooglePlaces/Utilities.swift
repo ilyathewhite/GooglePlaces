@@ -11,6 +11,7 @@ import Foundation
 enum GeneralError: Error {
    case noData(url: URL)
    case invalidData
+   case callFailed
 }
 
 enum Result<T> {

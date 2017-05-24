@@ -6,8 +6,8 @@ target 'GooglePlaces' do
   use_frameworks!
 
   # Pods for RxLogin
-    pod 'RxSwift',    '~> 3.4.1'
-    pod 'RxCocoa',    '~> 3.4.1'
-    pod 'RxSwiftExt', '~> 2.4.1'
+  # pod 'RxSwift',    '~> 3.4.1'
+  # pod 'RxCocoa',    '~> 3.4.1'
+  # pod 'RxSwiftExt', '~> 2.4.1'
 
 end
